@@ -14,8 +14,9 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, "user email is requires"],
-    unique: true,
+    unique: [true,"Email already registerd"],
     validate: [validator.isEmail, "pls enter a valid email"],
+    
   },
   password: {
     type: String,
@@ -44,7 +45,11 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre("save", async function (next) {
-  //  hash user password before saving using bcrypt
+  if (!this.isModified("password")) {
+    next();
+  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // JWT Token

@@ -31,6 +31,12 @@ export const addNewProduct = async (req, res, next) => {
 
 export const getAllProducts = async (req, res, next) => {
   // Implement the functionality for search, filter and pagination this function.
+  try {
+    const products = await getAllProductsRepo();
+    res.status(200).json({ success: true, products });
+  } catch (error) {
+    return next(new ErrorHandler(500, error.message || "Internal Server Error"));
+  }
 };
 
 export const updateProduct = async (req, res, next) => {
@@ -153,6 +159,14 @@ export const deleteReview = async (req, res, next) => {
 
     const reviewToBeDeleted = reviews[isReviewExistIndex];
     reviews.splice(isReviewExistIndex, 1);
+
+    // Update the product's rating after deleting the review
+    let avgRating = 0;
+    reviews.forEach((rev) => {
+      avgRating += rev.rating;
+    });
+    const updatedRatingOfProduct = avgRating / reviews.length;
+    product.rating = updatedRatingOfProduct;
 
     await product.save({ validateBeforeSave: false });
     res.status(200).json({

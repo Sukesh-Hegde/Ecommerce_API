@@ -19,6 +19,7 @@ import crypto from "crypto";
 export const createNewUser = async (req, res, next) => {
   const { name, email, password } = req.body;
   try {
+
     const newUser = await createNewUserRepo(req.body);
     await sendToken(newUser, res, 200);
 
@@ -26,7 +27,13 @@ export const createNewUser = async (req, res, next) => {
     await sendWelcomeEmail(newUser);
   } catch (err) {
     //  handle error for duplicate email
+    if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+      return next(new ErrorHandler(400, "Email already registered."));
+  }
+  else
+  {
     return next(new ErrorHandler(400, err));
+  }
   }
 };
 
@@ -37,6 +44,7 @@ export const userLogin = async (req, res, next) => {
       return next(new ErrorHandler(400, "please enter email/password"));
     }
     const user = await findUserRepo({ email }, true);
+
     if (!user) {
       return next(
         new ErrorHandler(401, "user not found! register yourself now!!")
@@ -63,11 +71,60 @@ export const logoutUser = async (req, res, next) => {
 };
 
 export const forgetPassword = async (req, res, next) => {
-  // Implement feature for forget password
+  const { email } = req.body;
+
+  try {
+    // Find the user by email
+    const user = await findUserRepo({ email });
+
+    // Check if the user exists
+    if (!user) {
+      return next(new ErrorHandler(404, "User not found with the provided email"));
+    }
+
+    // Generate a reset token and save it to the user
+    const resetToken = await user.getResetPasswordToken();
+    await user.save();
+
+    // Construct the reset password URL
+    const resetUrl = `${req.protocol}://${req.get("host")}/api/storefleet/user/password/reset/${resetToken}`;
+
+    // Implement the function to send the password reset email
+    await sendPasswordResetEmail(user, resetUrl);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset email sent successfully. Check your email for instructions.",
+    });
+  } catch (error) {
+    return next(new ErrorHandler(500, error.message || "Internal Server Error"));
+  }
 };
 
 export const resetUserPassword = async (req, res, next) => {
-  // Implement feature for reset password
+  const resetToken = req.params.token;
+  const { newPassword, confirmPassword } = req.body;
+
+  try {
+    // Find the user by the reset token
+    const user = await findUserForPasswordResetRepo(resetToken);
+
+    // Check if the user exists and the token is valid
+    if (!user) {
+      return next(new ErrorHandler(400, "Invalid or expired reset token"));
+    }
+
+    // Update the user's password
+    user.password = newPassword;
+    await user.save();
+
+    // Implement the function to send a notification email (optional)
+
+    // Send a success response
+    res.status(200).json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    return next(new ErrorHandler(500, error.message || "Internal Server Error"));
+  }
 };
 
 export const getUserDetails = async (req, res, next) => {
@@ -161,5 +218,22 @@ export const deleteUser = async (req, res, next) => {
 };
 
 export const updateUserProfileAndRole = async (req, res, next) => {
-  // Write your code here for updating the roles of other users by admin
+  const { userId, newRole, newData } = req.body;
+
+  try {
+    // Ensure that the admin has provided the necessary parameters
+    if (!req.user._id || !newRole || !newData) {
+      return next(new ErrorHandler(400, "Please provide userId, newRole, and newData"));
+    }
+
+    // Update the user's role and profile
+    const updatedUser = await updateUserRoleAndProfileRepo(userId, {
+      role: newRole,
+      ...newData,
+    });
+
+    res.status(200).json({ success: true, updatedUser });
+  } catch (error) {
+    return next(new ErrorHandler(400, error));
+  }
 };

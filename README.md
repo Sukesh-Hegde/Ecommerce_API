@@ -99,6 +99,23 @@ Get All Reviews: GET= http://localhost:3000/api/storefleet/product/reviews/65d5b
 
 Delete Review and Update: DeLete = http://localhost:3000/api/storefleet/product/review/delete?productId=65d5b463980eee55d9509b98&reviewId=65d5e14a3ac7d27fa4cb6456
 
+#### Tools Used
+
+NodeJS
+MongoDB
+ExpressJS
+
+##### Libraries
+bcryptjs
+express
+cookie-parser
+body-parser
+dotenv
+jsonwebtoken
+express-session
+mongoose
+nodemailer
+validator
 
 ## License
 

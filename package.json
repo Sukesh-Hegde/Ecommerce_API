@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "name": "not_decided",
+  "name": "Ecommerce API",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,7 +9,7 @@
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js"
   },
-  "author": "",
+  "author": "Sukesh Hegde",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
